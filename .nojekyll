@@ -1,0 +1,3 @@
+# Tell GitHub Pages NOT to run Jekyll on this repo.
+# Without this, files/folders starting with _ (none here, but safe default)
+# and certain asset types may be skipped by Jekyll, breaking the site.

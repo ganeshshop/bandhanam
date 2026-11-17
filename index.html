@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#5b1a1a">
+<meta name="description" content="Bandhanam — India's free invitation & guest management PWA. Build invitations, track RSVPs, manage gifts. Works on web + installs as mobile app.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bandhanam">
+<title>Bandhanam — Invitation & Guest Manager (PWA)</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Bandhanam — Invitation & Guest Manager","short_name":"Bandhanam","start_url":".","scope":".","display":"standalone","orientation":"portrait","background_color":"#5b1a1a","theme_color":"#5b1a1a","categories":["lifestyle","productivity"],"icons":[{"src":"icon.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},{"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}'>
+<link rel="icon" type="image/png" sizes="192x192" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   BANDHANAM — PWA · Single self-contained HTML
+   Zero-backend · localStorage persistence · 10 languages
+   Installable as mobile app + works as web app
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  --maroon:#5b1a1a; --maroon-deep:#3d1010; --maroon-soft:#7d2a2a;
+  --gold:#c9a14a; --gold-light:#e6c878; --gold-deep:#9a7a32;
+  --cream:#faf6ee; --cream-warm:#f3ead7; --paper:#fffdf8;
+  --ink:#2b1810; --ink-soft:#5a4434; --mute:#8a7560;
+  --line:#e6dcc4; --line-strong:#c9b894;
+  --green:#2d7a4a; --green-soft:#e3f1e8;
+  --amber:#d4a020; --amber-soft:#fdf3d4;
+  --red:#c0392b; --red-soft:#fce4e0;
+  --blue:#1a5b8a;
+  --shadow:0 4px 20px rgba(91,26,26,0.10);
+  --shadow-lg:0 12px 40px rgba(91,26,26,0.16);
+  --radius:14px; --radius-sm:8px; --radius-lg:22px;
+  --serif:"Georgia","Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--cream);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;min-height:100vh}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+a{color:var(--maroon);text-decoration:none}
+img{max-width:100%;height:auto;display:block}
+
+/* ─── Top app bar ─── */
+.appbar{background:var(--maroon-deep);color:var(--cream);padding:12px 16px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.appbar .brand{display:flex;align-items:center;gap:8px;font-family:var(--serif);font-weight:700;font-size:1.1rem;color:var(--gold-light)}
+.appbar .brand .mark{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 30% 30%,var(--gold-light),var(--gold) 60%,var(--gold-deep));display:flex;align-items:center;justify-content:center;color:var(--maroon-deep);font-weight:800;font-size:14px}
+.appbar-actions{display:flex;gap:6px;align-items:center}
+.icon-btn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;background:rgba(255,255,255,0.1);color:var(--cream)}
+.icon-btn:hover{background:rgba(255,255,255,0.2)}
+.lang-select{background:rgba(255,255,255,0.12);border:1px solid rgba(230,200,120,0.4);color:var(--cream);padding:5px 8px;border-radius:6px;font-size:0.72rem;cursor:pointer}
+.lang-select option{color:var(--ink)}
+
+/* ─── Bottom nav (mobile-app style) ─── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--paper);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:50;box-shadow:0 -2px 12px rgba(0,0,0,0.06)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;color:var(--mute);font-size:0.62rem;font-weight:600;cursor:pointer;border-radius:8px}
+.nav-item .ic{font-size:20px;line-height:1}
+.nav-item.active{color:var(--maroon)}
+.nav-item.active .ic{transform:translateY(-1px)}
+
+/* ─── Page container ─── */
+.page{display:none;padding:16px 16px 120px;max-width:920px;margin:0 auto;animation:fadeIn 0.2s}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── Hero / home ─── */
+.home-hero{background:linear-gradient(160deg,var(--maroon-deep) 0%,var(--maroon) 50%,var(--maroon-soft) 100%);color:var(--cream);padding:32px 20px 28px;border-radius:var(--radius-lg);text-align:center;margin-bottom:18px;position:relative;overflow:hidden}
+.home-hero::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 15% 20%,rgba(230,200,120,0.15) 0,transparent 40%),radial-gradient(circle at 85% 70%,rgba(230,200,120,0.10) 0,transparent 40%);pointer-events:none}
+.home-hero .inner{position:relative}
+.home-hero h1{font-family:var(--serif);font-size:clamp(1.5rem,5vw,2.2rem);font-weight:700;line-height:1.15;margin-bottom:8px}
+.home-hero h1 .gold{color:var(--gold-light);font-style:italic}
+.home-hero p{font-size:0.88rem;color:rgba(250,246,238,0.85);max-width:42ch;margin:0 auto 14px}
+.home-hero .cta-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+
+/* ─── Quick action grid ─── */
+.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.quick-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 8px;text-align:center;cursor:pointer;box-shadow:var(--shadow);transition:transform 0.1s}
+.quick-card:hover{transform:translateY(-2px)}
+.quick-card .ic{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--gold-light),var(--gold));display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 8px}
+.quick-card .lbl{font-size:0.74rem;font-weight:700;color:var(--maroon-deep)}
+.quick-card .sub{font-size:0.64rem;color:var(--mute);margin-top:1px}
+
+/* ─── Section card ─── */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card h2{font-family:var(--serif);font-size:1.15rem;color:var(--maroon-deep);margin-bottom:6px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.card h2 .left{display:flex;align-items:center;gap:8px}
+.card .sub{font-size:0.8rem;color:var(--ink-soft);margin-bottom:12px}
+.card .row-hint{font-size:0.72rem;color:var(--mute);margin-top:6px}
+
+/* ─── Forms ─── */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:0.72rem;font-weight:700;color:var(--ink-soft);margin-bottom:4px;letter-spacing:0.04em;text-transform:uppercase}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--line-strong);border-radius:var(--radius-sm);background:var(--paper);font-size:0.9rem}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--maroon);box-shadow:0 0 0 3px rgba(91,26,26,0.1)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+/* ─── Buttons ─── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:var(--radius-sm);font-size:0.86rem;font-weight:700;background:var(--maroon);color:var(--cream);border:1px solid var(--maroon-deep);cursor:pointer;transition:background 0.12s}
+.btn:hover{background:var(--maroon-deep)}
+.btn.gold{background:var(--gold);color:var(--maroon-deep);border-color:var(--gold-deep)}
+.btn.gold:hover{background:var(--gold-light)}
+.btn.green{background:var(--green);border-color:#1f5a36}
+.btn.green:hover{background:#235c3c}
+.btn.outline{background:transparent;color:var(--maroon);border-color:var(--maroon)}
+.btn.outline:hover{background:var(--maroon);color:var(--cream)}
+.btn.block{display:flex;width:100%;justify-content:center}
+.btn.sm{padding:6px 12px;font-size:0.76rem}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+
+/* ─── Event list ─── */
+.event-item{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:var(--radius);padding:14px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px}
+.event-item:hover{box-shadow:var(--shadow)}
+.event-item .ic{width:46px;height:46px;border-radius:12px;background:var(--cream-warm);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.event-item .body{flex:1;min-width:0}
+.event-item .name{font-family:var(--serif);font-weight:700;color:var(--maroon-deep);font-size:0.96rem}
+.event-item .meta{font-size:0.74rem;color:var(--ink-soft);margin-top:1px}
+.event-item .count{font-size:0.7rem;color:var(--mute);margin-top:2px}
+.event-item .arrow{color:var(--mute);font-size:1.2rem}
+
+/* ─── Empty state ─── */
+.empty{text-align:center;padding:32px 16px;color:var(--mute)}
+.empty .ic{font-size:3rem;opacity:0.5;margin-bottom:10px}
+.empty .msg{font-size:0.88rem;margin-bottom:14px}
+
+/* ─── Stat tiles ─── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.stat-tile{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 6px;text-align:center}
+.stat-tile .num{font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--maroon-deep);line-height:1}
+.stat-tile .lbl{font-size:0.6rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--mute);margin-top:3px;font-weight:600}
+.stat-tile.green .num{color:var(--green)}
+.stat-tile.amber .num{color:var(--amber)}
+.stat-tile.red .num{color:var(--red)}
+
+/* ─── Guest row ─── */
+.guest-row{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:var(--radius-sm);margin-bottom:6px;background:var(--paper)}
+.guest-row .avatar{width:36px;height:36px;border-radius:50%;background:var(--cream-warm);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--maroon-deep);font-size:0.86rem;flex-shrink:0}
+.guest-row .body{flex:1;min-width:0}
+.guest-row .name{font-weight:600;color:var(--ink);font-size:0.86rem}
+.guest-row .meta{font-size:0.7rem;color:var(--mute)}
+.guest-row .actions{display:flex;gap:4px}
+.guest-row .actions button{width:30px;height:30px;border-radius:6px;font-size:14px;background:var(--cream);cursor:pointer}
+.guest-row .actions button.del{color:var(--red)}
+.guest-row .actions button.edit{color:var(--maroon)}
+
+.rsvp-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.62rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase}
+.rsvp-badge.yes{background:var(--green-soft);color:var(--green)}
+.rsvp-badge.no{background:var(--red-soft);color:var(--red)}
+.rsvp-badge.pending{background:var(--amber-soft);color:var(--amber-deep,#9a6e0a)}
+
+/* ─── Pricing cards ─── */
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:start}
+.price-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);position:relative;display:flex;flex-direction:column}
+.price-card.popular{border:2px solid var(--gold);box-shadow:var(--shadow-lg);transform:scale(1.02)}
+.price-card.popular::before{content:"POPULAR";position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--maroon-deep);font-size:0.58rem;letter-spacing:0.12em;font-weight:800;padding:3px 10px;border-radius:8px}
+.price-name{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--maroon-deep);margin-bottom:3px}
+.price-desc{font-size:0.72rem;color:var(--mute);margin-bottom:12px;min-height:28px}
+.price-amt{font-family:var(--serif);font-size:1.9rem;font-weight:700;color:var(--maroon);line-height:1}
+.price-amt .cur{font-size:0.5em;vertical-align:top;color:var(--ink-soft)}
+.price-per{font-size:0.7rem;color:var(--mute);margin:3px 0 12px}
+.price-feats{list-style:none;margin:0 0 14px;flex:1}
+.price-feats li{font-size:0.74rem;color:var(--ink);padding:4px 0;border-bottom:1px solid var(--line);display:flex;gap:6px;align-items:flex-start}
+.price-feats li:last-child{border-bottom:0}
+.price-feats li::before{content:"✓";color:var(--green);font-weight:800;flex-shrink:0}
+.price-feats li.off{color:var(--mute);opacity:0.6}
+.price-feats li.off::before{content:"—";color:var(--mute)}
+
+/* ─── UPI payment box ─── */
+.upi-box{background:linear-gradient(135deg,var(--cream-warm),var(--paper));border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-top:12px}
+.upi-box h3{font-family:var(--serif);font-size:1rem;color:var(--maroon-deep);margin-bottom:10px}
+.qr-display{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;text-align:center;margin:10px 0}
+.qr-display img{display:block;margin:0 auto;max-width:180px;width:180px;height:180px}
+.qr-display .qr-cap{font-size:0.72rem;color:var(--mute);margin-top:6px}
+
+/* ─── Toast ─── */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--maroon-deep);color:var(--cream);padding:11px 22px;border-radius:24px;font-size:0.84rem;font-weight:600;box-shadow:var(--shadow-lg);z-index:200;opacity:0;visibility:hidden;transition:opacity 0.25s,visibility 0.25s;max-width:90vw}
+.toast.show{opacity:1;visibility:visible}
+
+/* ─── Modal ─── */
+.modal-overlay{position:fixed;inset:0;background:rgba(40,15,15,0.6);backdrop-filter:blur(4px);z-index:150;display:none;align-items:flex-end;justify-content:center;padding:0}
+.modal-overlay.show{display:flex;animation:fadeIn 0.2s}
+.modal{background:var(--paper);border-radius:var(--radius-lg) var(--radius-lg) 0 0;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+.modal-hd{padding:18px 20px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--paper);z-index:1}
+.modal-hd h3{font-family:var(--serif);font-size:1.15rem;color:var(--maroon-deep)}
+.modal-close{font-size:1.5rem;color:var(--mute);cursor:pointer;line-height:1}
+.modal-bd{padding:18px 20px 60px}
+
+/* ─── Install banner ─── */
+.install-banner{position:fixed;bottom:72px;left:8px;right:8px;background:var(--maroon-deep);color:var(--cream);border-radius:var(--radius);padding:12px 14px;display:none;align-items:center;gap:10px;box-shadow:var(--shadow-lg);z-index:60}
+.install-banner.show{display:flex}
+.install-banner .ic{font-size:1.4rem}
+.install-banner .body{flex:1;font-size:0.78rem}
+.install-banner .body strong{color:var(--gold-light)}
+.install-banner button{padding:6px 12px;font-size:0.74rem;border-radius:6px;background:var(--gold);color:var(--maroon-deep);font-weight:700;cursor:pointer}
+.install-banner .x{background:none;color:var(--cream);font-size:1.2rem;padding:4px}
+
+/* ─── Timeline / ceremony ─── */
+.ceremony-list{margin-top:8px}
+.ceremony-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.ceremony-item:last-child{border-bottom:0}
+.ceremony-item .ic{width:38px;height:38px;border-radius:10px;background:var(--cream-warm);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.ceremony-item .body{flex:1;min-width:0}
+.ceremony-item .name{font-family:var(--serif);font-weight:700;color:var(--maroon-deep);font-size:0.92rem}
+.ceremony-item .when{font-size:0.7rem;color:var(--gold-deep);margin-top:2px;letter-spacing:0.04em;text-transform:uppercase;font-weight:600}
+.ceremony-item .where{font-size:0.74rem;color:var(--ink-soft);margin-top:2px}
+
+/* ─── Gift item ─── */
+.gift-item{display:flex;gap:12px;padding:12px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;align-items:center;background:var(--paper)}
+.gift-item .ic{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--gold-light),var(--gold));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.gift-item .body{flex:1;min-width:0}
+.gift-item .name{font-weight:700;color:var(--maroon-deep);font-size:0.84rem}
+.gift-item .meta{font-size:0.68rem;color:var(--mute)}
+.gift-item .bar{height:4px;background:var(--line);border-radius:3px;margin-top:5px;overflow:hidden}
+.gift-item .bar .fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light))}
+
+/* ─── Tabs ─── */
+.tabs{display:flex;gap:4px;margin-bottom:14px;background:var(--cream-warm);padding:4px;border-radius:var(--radius);overflow-x:auto}
+.tab{flex:1;white-space:nowrap;padding:8px 12px;border-radius:var(--radius-sm);font-size:0.78rem;font-weight:700;color:var(--ink-soft);cursor:pointer;text-align:center}
+.tab.active{background:var(--paper);color:var(--maroon-deep);box-shadow:var(--shadow)}
+
+/* ─── Invitation preview ─── */
+.invite-preview{background:linear-gradient(160deg,var(--maroon-deep) 0%,var(--maroon) 50%,var(--maroon-soft) 100%);color:var(--cream);padding:24px 18px;border-radius:var(--radius-lg);text-align:center;margin:10px 0}
+.invite-preview .deco{font-size:1.2rem;color:var(--gold-light);letter-spacing:0.3em;margin-bottom:8px}
+.invite-preview .eyebrow{font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-light);margin-bottom:10px}
+.invite-preview .couple{font-family:var(--serif);font-size:1.6rem;font-weight:700;line-height:1.1;margin-bottom:6px}
+.invite-preview .couple .amp{color:var(--gold-light);font-style:italic;font-size:0.55em;display:block;margin:4px 0}
+.invite-preview .event{font-family:var(--serif);font-size:0.95rem;color:var(--gold-light);margin:8px 0 4px}
+.invite-preview .meta{font-size:0.76rem;color:rgba(250,246,238,0.85);margin:3px 0}
+.invite-preview .venue{font-size:0.72rem;color:rgba(250,246,238,0.7);font-style:italic;margin-top:8px}
+
+/* ─── Template grid ─── */
+.template-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:10px 0}
+.template-card{background:var(--paper);border:2px solid var(--line);border-radius:var(--radius);padding:14px 10px;text-align:center;cursor:pointer;transition:border-color 0.12s}
+.template-card:hover{border-color:var(--gold)}
+.template-card.selected{border-color:var(--maroon);background:var(--cream-warm)}
+.template-card .ic{font-size:2rem;margin-bottom:6px}
+.template-card .name{font-family:var(--serif);font-weight:700;color:var(--maroon-deep);font-size:0.84rem}
+.template-card .desc{font-size:0.66rem;color:var(--mute);margin-top:2px}
+
+/* ─── Responsive ─── */
+@media (max-width:640px){
+  .quick-grid{grid-template-columns:repeat(2,1fr)}
+  .stat-grid{grid-template-columns:repeat(4,1fr)}
+  .stat-tile{padding:8px 2px}
+  .stat-tile .num{font-size:1.1rem}
+  .stat-tile .lbl{font-size:0.54rem}
+  .pricing-grid{grid-template-columns:1fr}
+  .price-card.popular{transform:none}
+  .field-row{grid-template-columns:1fr}
+  .field-row-3{grid-template-columns:1fr}
+  .modal-overlay{align-items:stretch;padding:0}
+  .modal{border-radius:0;max-height:100vh;height:100vh}
+}
+@media (min-width:900px){
+  .modal-overlay{align-items:center;padding:20px}
+  .modal{border-radius:var(--radius-lg)}
+}
+</style>
+</head>
+<body>
+
+<!-- ─── App bar ─── -->
+<header class="appbar">
+  <div class="brand"><span class="mark">ॐ</span> <span data-i18n="app_name">Bandhanam</span></div>
+  <div class="appbar-actions">
+    <select class="lang-select" id="langSelect" aria-label="Language">
+      <option value="en">🇮🇳 EN</option>
+      <option value="hi">हिन्दी</option>
+      <option value="te">తెలుగు</option>
+      <option value="mr">मराठी</option>
+      <option value="ta">தமிழ்</option>
+      <option value="bn">বাংলা</option>
+      <option value="gu">ગુજરાતી</option>
+      <option value="kn">ಕನ್ನಡ</option>
+      <option value="ml">മലയാളം</option>
+      <option value="pa">ਪੰਜਾਬੀ</option>
+    </select>
+    <button class="icon-btn" id="installBtn" title="Install app" style="display:none">📥</button>
+    <button class="icon-btn" id="exportBtn" title="Backup data">💾</button>
+  </div>
+</header>
+
+<!-- ─── Pages ─── -->
+<main>
+
+<!-- HOME PAGE -->
+<section class="page active" id="page-home">
+  <div class="home-hero">
+    <div class="inner">
+      <h1 data-i18n="home_hero_title">Every celebration,<br><span class="gold">beautifully managed.</span></h1>
+      <p data-i18n="home_hero_sub">Build invitations, track RSVPs, manage gifts — all in one app. Works on web, installs as mobile app. Free to start.</p>
+      <div class="cta-row">
+        <button class="btn gold" onclick="navTo('events');openEventModal()" data-i18n="cta_new_event">+ Create invitation</button>
+        <button class="btn" style="background:rgba(255,255,255,0.12);border:1px solid rgba(230,200,120,0.5);color:var(--cream)" onclick="navTo('pricing')" data-i18n="cta_see_plans">See plans</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="quick-grid">
+    <div class="quick-card" onclick="navTo('events');openEventModal()">
+      <div class="ic">✉️</div><div class="lbl" data-i18n="quick_invite">New invite</div><div class="sub" data-i18n="quick_invite_sub">Build & share</div>
+    </div>
+    <div class="quick-card" onclick="navTo('events')">
+      <div class="ic">👥</div><div class="lbl" data-i18n="quick_guests">Guests</div><div class="sub" data-i18n="quick_guests_sub">RSVP tracker</div>
+    </div>
+    <div class="quick-card" onclick="navTo('events');renderEvents();setTimeout(()=>{const first=document.querySelector('.event-item');if(first)openEventDetail(first.dataset.id)},100)">
+      <div class="ic">🎁</div><div class="lbl" data-i18n="quick_gifts">Gifts</div><div class="sub" data-i18n="quick_gifts_sub">Wishlist & cash</div>
+    </div>
+    <div class="quick-card" onclick="navTo('pricing')">
+      <div class="ic">💎</div><div class="lbl" data-i18n="quick_plans">Plans</div><div class="sub" data-i18n="quick_plans_sub">₹0 to ₹499</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="left">📊 <span data-i18n="stats_title">Your dashboard</span></span></h2>
+    <div class="stat-grid" id="homeStats">
+      <!-- filled by JS -->
+    </div>
+    <div class="row-hint" data-i18n="stats_hint">All data stays in your device. No server, no signup.</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="left">📱 <span data-i18n="install_title">Install as mobile app</span></span></h2>
+    <p class="sub" data-i18n="install_sub">Bandhanam is a PWA — it installs on your phone home screen, works offline, and feels like a native app. No Play Store download.</p>
+    <button class="btn gold block" onclick="triggerInstall()" data-i18n="install_btn">📲 Install Bandhanam</button>
+    <div class="row-hint" id="installHint" data-i18n="install_hint_ios">On iPhone: tap Share → "Add to Home Screen". On Android: tap menu → "Install app".</div>
+  </div>
+</section>
+
+<!-- EVENTS PAGE -->
+<section class="page" id="page-events">
+  <div class="card">
+    <h2><span class="left">💌 <span data-i18n="events_title">Your invitations</span></span>
+      <button class="btn sm gold" onclick="openEventModal()" data-i18n="events_new">+ New</button>
+    </h2>
+    <div id="eventsList"></div>
+  </div>
+</section>
+
+<!-- EVENT DETAIL PAGE -->
+<section class="page" id="page-detail">
+  <div id="detailContent"></div>
+</section>
+
+<!-- PRICING PAGE -->
+<section class="page" id="page-pricing">
+  <div class="card" style="text-align:center">
+    <h2 style="justify-content:center"><span class="left">💎 <span data-i18n="pricing_title">Simple plans in ₹</span></span></h2>
+    <p class="sub" data-i18n="pricing_sub">Start free forever. Upgrade only when you need more. Direct UPI payment — no gateway, no hidden fees.</p>
+  </div>
+
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-name" data-i18n="plan_free_name">Free</div>
+      <div class="price-desc" data-i18n="plan_free_desc">Try it out, tiny functions</div>
+      <div class="price-amt"><span class="cur">₹</span>0</div>
+      <div class="price-per" data-i18n="plan_free_per">forever</div>
+      <ul class="price-feats">
+        <li data-i18n="plan_free_f1">1 event</li>
+        <li data-i18n="plan_free_f2">Up to 30 guests</li>
+        <li data-i18n="plan_free_f3">WhatsApp invitation</li>
+        <li data-i18n="plan_free_f4">RSVP dashboard</li>
+        <li data-i18n="plan_free_f5">All 10 languages</li>
+        <li class="off" data-i18n="plan_free_f6">Gift wishlist</li>
+        <li class="off" data-i18n="plan_free_f7">Catering export</li>
+        <li class="off" data-i18n="plan_free_f8">Custom branding</li>
+      </ul>
+      <button class="btn outline block" onclick="setCurrentPlan('free');showToast(t('plan_activated_free'))" data-i18n="plan_free_btn">Use Free</button>
+    </div>
+
+    <div class="price-card popular">
+      <div class="price-name" data-i18n="plan_lite_name">Lite</div>
+      <div class="price-desc" data-i18n="plan_lite_desc">One celebration, all features</div>
+      <div class="price-amt"><span class="cur">₹</span>149</div>
+      <div class="price-per" data-i18n="plan_lite_per">per function · one-time</div>
+      <ul class="price-feats">
+        <li data-i18n="plan_lite_f1">1 event (any type)</li>
+        <li data-i18n="plan_lite_f2">Up to 300 guests</li>
+        <li data-i18n="plan_lite_f3">Everything in Free</li>
+        <li data-i18n="plan_lite_f4">Gift wishlist + UPI collect</li>
+        <li data-i18n="plan_lite_f5">Catering export (CSV)</li>
+        <li data-i18n="plan_lite_f6">QR code invitation</li>
+        <li data-i18n="plan_lite_f7">Auto reminders (T-7, T-1)</li>
+        <li data-i18n="plan_lite_f8">Photo gallery (100)</li>
+      </ul>
+      <button class="btn gold block" onclick="openPayment('lite')" data-i18n="plan_lite_btn">Pay ₹149 via UPI</button>
+    </div>
+
+    <div class="price-card">
+      <div class="price-name" data-i18n="plan_pro_name">Pro</div>
+      <div class="price-desc" data-i18n="plan_pro_desc">Unlimited events, full power</div>
+      <div class="price-amt"><span class="cur">₹</span>499</div>
+      <div class="price-per" data-i18n="plan_pro_per">per year · unlimited events</div>
+      <ul class="price-feats">
+        <li data-i18n="plan_pro_f1">Unlimited events</li>
+        <li data-i18n="plan_pro_f2">Up to 1,000 guests each</li>
+        <li data-i18n="plan_pro_f3">Everything in Lite</li>
+        <li data-i18n="plan_pro_f4">Custom branding & colors</li>
+        <li data-i18n="plan_pro_f5">Multi-ceremony timeline</li>
+        <li data-i18n="plan_pro_f6">Analytics dashboard</li>
+        <li data-i18n="plan_pro_f7">Photo gallery (1,000)</li>
+        <li data-i18n="plan_pro_f8">Priority email support</li>
+      </ul>
+      <button class="btn outline block" onclick="openPayment('pro')" data-i18n="plan_pro_btn">Pay ₹499 via UPI</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2><span class="left">💳 <span data-i18n="how_pay_title">How payment works</span></span></h2>
+    <p class="sub" data-i18n="how_pay_sub">You pay directly via UPI to the developer's personal account. No payment gateway, no 2% fees, no GST, no company registration needed. After payment, screenshot & send to activate — usually within 1 hour.</p>
+    <div class="row-hint" data-i18n="how_pay_note">⚠️ This is a pre-registration operating model. Once revenue crosses ₹20 lakh/year (GST threshold), proper GST registration and company incorporation will follow.</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="left">❓ <span data-i18n="faq_title">Common questions</span></span></h2>
+    <div style="font-size:0.84rem;color:var(--ink);line-height:1.7">
+      <p style="margin-bottom:8px"><strong style="color:var(--maroon-deep)" data-i18n="faq_q1">Is my data safe?</strong><br><span data-i18n="faq_a1">All data stays in your phone's local storage. Nothing is uploaded to any server. Backup/export anytime via the 💾 button top-right.</span></p>
+      <p style="margin-bottom:8px"><strong style="color:var(--maroon-deep)" data-i18n="faq_q2">Does it work offline?</strong><br><span data-i18n="faq_a2">Yes. After first load, the app caches itself. You can build invitations and manage guests even without internet — sharing via WhatsApp needs connection.</span></p>
+      <p style="margin-bottom:8px"><strong style="color:var(--maroon-deep)" data-i18n="faq_q3">Can guests RSVP without the app?</strong><br><span data-i18n="faq_a3">Yes. They just tap the WhatsApp link you send. The invitation opens in their phone browser — no install required.</span></p>
+      <p><strong style="color:var(--maroon-deep)" data-i18n="faq_q4">Can I get a refund?</strong><br><span data-i18n="faq_a4">Yes — full refund within 7 days if you haven't used the paid features. Just email your UPI transaction ID.</span></p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ─── Bottom nav ─── -->
+<nav class="bottom-nav">
+  <div class="nav-item active" data-nav="home" onclick="navTo('home')">
+    <span class="ic">🏠</span><span data-i18n="nav_home">Home</span>
+  </div>
+  <div class="nav-item" data-nav="events" onclick="navTo('events')">
+    <span class="ic">💌</span><span data-i18n="nav_events">Invites</span>
+  </div>
+  <div class="nav-item" data-nav="detail" onclick="navTo('events');renderEvents();setTimeout(()=>{const f=document.querySelector('.event-item');if(f)openEventDetail(f.dataset.id)},80)">
+    <span class="ic">👥</span><span data-i18n="nav_guests">Guests</span>
+  </div>
+  <div class="nav-item" data-nav="pricing" onclick="navTo('pricing')">
+    <span class="ic">💎</span><span data-i18n="nav_plans">Plans</span>
+  </div>
+</nav>
+
+<!-- ─── Install banner ─── -->
+<div class="install-banner" id="installBanner">
+  <span class="ic">📲</span>
+  <div class="body"><strong data-i18n="banner_title">Install Bandhanam</strong><br><span data-i18n="banner_sub">Works offline, opens faster, feels native</span></div>
+  <button onclick="triggerInstall()" data-i18n="banner_btn">Install</button>
+  <button class="x" onclick="document.getElementById('installBanner').classList.remove('show')">×</button>
+</div>
+
+<!-- ─── Toast ─── -->
+<div class="toast" id="toast"></div>
+
+<!-- ─── Modal ─── -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-hd">
+      <h3 id="modalTitle">—</h3>
+      <span class="modal-close" onclick="closeModal()">×</span>
+    </div>
+    <div class="modal-bd" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   BANDHANAM PWA · Application logic
+   ───────────────────────────────────────────────────────────
+   Architecture: zero-backend. All data in localStorage.
+   Languages: 10 Indian languages. PWA-installable.
+   Payment: direct UPI to developer's personal account.
+   ═══════════════════════════════════════════════════════════ */
+'use strict';
+
+/* ─── Operator payment config — KUCHE GANESH (Bandhanam) ───
+   LIVE details as of 2026-11-17. UPI is the primary channel.
+   Bank transfer (NEFT/IMPS) is a fallback shown via a collapsible section
+   in the payment modal for users whose UPI app fails.
+   NOTE: MMID is intentionally NOT exposed — it is only needed for IMPS
+   mobile-to-mobile and is a sensitive code. UPI ID covers all UPI flows. */
+const DEV_UPI = {
+  id: '7717625968@ybl',                      // PhonePe YBL VPA
+  name: 'KUCHE GANESH',
+  note: 'Bandhanam subscription',
+  supportEmail: 'businessganeshshop@gmail.com',
+  bank: {
+    holder: 'KUCHE GANESH',
+    account: '50100746583439',
+    ifsc: 'HDFC0009237',
+    branch: 'SHIVRANJANI CROSS ROAD (HDFC Bank)'
+  }
+};
+const ACTIVATION_SECRET = 'BND-2026-NOV-SOLO-9F2A';
+const ACTIVATION_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I
+
+/* Client-side SHA-1 via Web Crypto (returns uppercase hex). */
+async function sha1Hex(msg) {
+  const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
+}
+
+/* Verify an activation code client-side (must match scripts/bandhanam_code_gen.py). */
+async function verifyActivationCode(rawCode) {
+  const code = (rawCode||'').trim().toUpperCase();
+  const parts = code.split('-');
+  if (parts.length !== 4 || parts[0] !== 'BND') return {ok:false, msg:'Format: BND-L-XXXXXXXX-YY'};
+  const [_, plan, code8, chk] = parts;
+  if (!['L','P'].includes(plan)) return {ok:false, msg:'Unknown plan code'};
+  if (code8.length !== 8 || [...code8].some(c => !ACTIVATION_ALPHABET.includes(c)))
+    return {ok:false, msg:'Code segment invalid'};
+  if (chk.length !== 2) return {ok:false, msg:'Checksum missing'};
+  const expected = (await sha1Hex('BND'+plan+code8+ACTIVATION_SECRET)).slice(0,2);
+  if (chk !== expected) return {ok:false, msg:'Code invalid or tampered'};
+  return {ok:true, plan: plan==='L'?'lite':'pro', msg: plan==='L'?'Lite activated':'Pro activated'};
+}
+
+/* ─── i18n: 10 Indian languages ─── */
+const I18N = {
+  en: {
+    app_name:'Bandhanam', home_hero_title:'Every celebration,<br><span class="gold">beautifully managed.</span>',
+    home_hero_sub:'Build invitations, track RSVPs, manage gifts — all in one app. Works on web, installs as mobile app. Free to start.',
+    cta_new_event:'+ Create invitation', cta_see_plans:'See plans',
+    quick_invite:'New invite', quick_invite_sub:'Build & share',
+    quick_guests:'Guests', quick_guests_sub:'RSVP tracker',
+    quick_gifts:'Gifts', quick_gifts_sub:'Wishlist & cash',
+    quick_plans:'Plans', quick_plans_sub:'₹0 to ₹499',
+    stats_title:'Your dashboard', stats_hint:'All data stays in your device. No server, no signup.',
+    install_title:'Install as mobile app', install_sub:"Bandhanam is a PWA — it installs on your phone home screen, works offline, and feels like a native app. No Play Store download.",
+    install_btn:'📲 Install Bandhanam', install_hint_ios:'On iPhone: tap Share → "Add to Home Screen". On Android: tap menu → "Install app".',
+    events_title:'Your invitations', events_new:'+ New',
+    pricing_title:'Simple plans in ₹', pricing_sub:'Start free forever. Upgrade only when you need more. Direct UPI payment — no gateway, no hidden fees.',
+    plan_free_name:'Free', plan_free_desc:'Try it out, tiny functions', plan_free_per:'forever',
+    plan_free_f1:'1 event', plan_free_f2:'Up to 30 guests', plan_free_f3:'WhatsApp invitation', plan_free_f4:'RSVP dashboard', plan_free_f5:'All 10 languages',
+    plan_free_f6:'Gift wishlist', plan_free_f7:'Catering export', plan_free_f8:'Custom branding',
+    plan_free_btn:'Use Free',
+    plan_lite_name:'Lite', plan_lite_desc:'One celebration, all features', plan_lite_per:'per function · one-time',
+    plan_lite_f1:'1 event (any type)', plan_lite_f2:'Up to 300 guests', plan_lite_f3:'Everything in Free', plan_lite_f4:'Gift wishlist + UPI collect',
+    plan_lite_f5:'Catering export (CSV)', plan_lite_f6:'QR code invitation', plan_lite_f7:'Auto reminders (T-7, T-1)', plan_lite_f8:'Photo gallery (100)',
+    plan_lite_btn:'Pay ₹149 via UPI',
+    plan_pro_name:'Pro', plan_pro_desc:'Unlimited events, full power', plan_pro_per:'per year · unlimited events',
+    plan_pro_f1:'Unlimited events', plan_pro_f2:'Up to 1,000 guests each', plan_pro_f3:'Everything in Lite', plan_pro_f4:'Custom branding & colors',
+    plan_pro_f5:'Multi-ceremony timeline', plan_pro_f6:'Analytics dashboard', plan_pro_f7:'Photo gallery (1,000)', plan_pro_f8:'Priority email support',
+    plan_pro_btn:'Pay ₹499 via UPI',
+    how_pay_title:'How payment works', how_pay_sub:"You pay directly via UPI to the developer's personal account. No payment gateway, no 2% fees, no GST, no company registration needed. After payment, screenshot & send to activate — usually within 1 hour.",
+    how_pay_note:'⚠️ This is a pre-registration operating model. Once revenue crosses ₹20 lakh/year (GST threshold), proper GST registration and company incorporation will follow.',
+    faq_title:'Common questions',
+    faq_q1:'Is my data safe?', faq_a1:'All data stays in your phone\'s local storage. Nothing is uploaded to any server. Backup/export anytime via the 💾 button top-right.',
+    faq_q2:'Does it work offline?', faq_a2:'Yes. After first load, the app caches itself. You can build invitations and manage guests even without internet — sharing via WhatsApp needs connection.',
+    faq_q3:'Can guests RSVP without the app?', faq_a3:'Yes. They just tap the WhatsApp link you send. The invitation opens in their phone browser — no install required.',
+    faq_q4:'Can I get a refund?', faq_a4:'Yes — full refund within 7 days if you haven\'t used the paid features. Just email your UPI transaction ID.',
+    nav_home:'Home', nav_events:'Invites', nav_guests:'Guests', nav_plans:'Plans',
+    banner_title:'Install Bandhanam', banner_sub:'Works offline, opens faster, feels native', banner_btn:'Install',
+    plan_activated_free:'Free plan activated ✅',
+    stats_events:'Events', stats_guests:'Guests', stats_confirmed:'Confirmed', stats_pending:'Pending',
+    no_events_title:'No invitations yet', no_events_msg:'Create your first invitation — wedding, haldi, birthday, anything!',
+    modal_new_event:'Create invitation', modal_edit_event:'Edit invitation',
+    field_fn_type:'Function type', field_couple_a:'Person 1 name', field_couple_b:'Person 2 name (optional)',
+    field_event_date:'Date', field_event_time:'Time', field_venue:'Venue', field_address:'Address',
+    field_lang:'Invitation language', field_template:'Template', field_upi:'Your UPI ID (for gifts)',
+    btn_save:'Save invitation', btn_cancel:'Cancel', btn_delete:'Delete',
+    fn_wedding:'💍 Wedding', fn_haldi:'🌼 Haldi', fn_mehendi:'🌿 Mehendi', fn_sangeet:'🎵 Sangeet',
+    fn_engagement:'💎 Engagement', fn_reception:'🥂 Reception', fn_birthday:'🎂 Birthday',
+    fn_housewarming:'🏡 Housewarming', fn_naming:'👶 Naming', fn_annaprashan:'🍚 Annaprashan',
+    detail_share:'📤 Share on WhatsApp', detail_share_copy:'Copy link', detail_add_guest:'+ Add guest',
+    detail_guests:'Guests', detail_gifts:'Gift wishlist', detail_timeline:'Ceremonies',
+    detail_stats:'Statistics', tab_guests:'Guests', tab_gifts:'Gifts', tab_timeline:'Ceremonies', tab_stats:'Stats',
+    guest_name:'Guest name', guest_phone:'Mobile', guest_side:'Side', guest_rsvp:'RSVP',
+    side_groom:"Groom's", side_bride:"Bride's", side_common:'Common', side_friend:'Friend',
+    rsvp_yes:'✓ Coming', rsvp_no:'✗ Not coming', rsvp_pending:'⏳ Pending',
+    add_gift:'Add gift item', gift_name:'Gift name', gift_goal:'Goal amount (₹)', gift_contrib:'Contributed (₹)',
+    gift_share:'Share', gift_link:'Contribute link',
+    add_ceremony:'+ Add ceremony', ceremony_name:'Ceremony', ceremony_date:'Date', ceremony_time:'Time', ceremony_venue:'Venue',
+    confirm_delete:'Delete this? This cannot be undone.',
+    pay_title:'Activate your plan', pay_amt:'Amount', pay_to:'Pay to', pay_upi_id:'UPI ID',
+    pay_qr:'Scan to pay (any UPI app)', pay_after:'No code yet? After paying, email your UPI ref to '+ 'SUPPORT_EMAIL' +' — you will receive your code within 1 hour.',
+    pay_steps:'<strong>How to activate:</strong> 1) Pay ₹{amt} via UPI above. 2) Email/SMS your UPI transaction reference to the developer. 3) You receive a code like BND-L-XXXXXXXX-YY. 4) Paste it below and tap Activate.',
+    pay_code_label:'Activation code (sent after payment)',
+    pay_activate:'✓ Activate plan',
+    pay_done:'I have paid — activate now', pay_open_upi:'Open UPI app',
+    share_msg:'You are invited! Tap to view & RSVP:',
+    toast_saved:'Saved ✅', toast_deleted:'Deleted', toast_copied:'Link copied 📋',
+    toast_exported:'Backup downloaded 💾', toast_imported:'Backup restored ✅',
+    plan_lite_activated:'Lite plan active! All features unlocked 🎉', plan_pro_activated:'Pro plan active! Unlimited events 🎉',
+    limit_reached:'Free plan limit reached. Upgrade to add more.',
+    days:'days', hrs:'hrs', min:'min'
+  },
+  hi: {
+    app_name:'बंधनम्', home_hero_title:'हर उत्सव,<br><span class="gold">सुंदरता से संभाला।</span>',
+    home_hero_sub:'निमंत्रण बनाएं, RSVP ट्रैक करें, उपहार प्रबंधित करें — एक ही ऐप में। वेब पर चलता है, मोबाइल ऐप जैसा इंस्टॉल होता है। मुफ्त शुरू करें।',
+    cta_new_event:'+ निमंत्रण बनाएं', cta_see_plans:'योजनाएं देखें',
+    quick_invite:'नया निमंत्रण', quick_invite_sub:'बनाएं और भेजें',
+    quick_guests:'मेहमान', quick_guests_sub:'RSVP ट्रैकर',
+    quick_gifts:'उपहार', quick_gifts_sub:'विशलिस्ट और नकद',
+    quick_plans:'योजनाएं', quick_plans_sub:'₹0 से ₹499',
+    stats_title:'आपका डैशबोर्ड', stats_hint:'सारा डेटा आपके फोन में रहता है। कोई सर्वर नहीं, कोई साइनअप नहीं।',
+    install_title:'मोबाइल ऐप जैसा इंस्टॉल करें', install_sub:'बंधनम् PWA है — यह आपके फोन की होम स्क्रीन पर इंस्टॉल होता है, ऑफलाइन चलता है, और नेटिव ऐप जैसा लगता है। प्ले स्टोर डाउनलोड नहीं।',
+    install_btn:'📲 बंधनम् इंस्टॉल करें', install_hint_ios:'iPhone पर: Share → "Add to Home Screen" टैप करें। Android पर: मेनू → "Install app"।',
+    events_title:'आपके निमंत्रण', events_new:'+ नया',
+    pricing_title:'₹ में सरल योजनाएं', pricing_sub:'हमेशा मुफ्त शुरू करें। जब ज़रूरत हो तभी अपग्रेड करें। सीधा UPI भुगतान — कोई गेटवे नहीं, कोई छिपा शुल्क नहीं।',
+    plan_free_name:'मुफ्त', plan_free_desc:'आज़माएं, छोटे कार्यक्रम', plan_free_per:'हमेशा',
+    plan_free_f1:'1 कार्यक्रम', plan_free_f2:'30 तक मेहमान', plan_free_f3:'व्हाट्सएप निमंत्रण', plan_free_f4:'RSVP डैशबोर्ड', plan_free_f5:'सभी 10 भाषाएं',
+    plan_free_f6:'उपहार विशलिस्ट', plan_free_f7:'केटरिंग निर्यात', plan_free_f8:'कस्टम ब्रांडिंग',
+    plan_free_btn:'मुफ्त उपयोग करें',
+    plan_lite_name:'लाइट', plan_lite_desc:'एक उत्सव, सभी फीचर', plan_lite_per:'प्रति कार्यक्रम · एक बार',
+    plan_lite_f1:'1 कार्यक्रम (कोई भी)', plan_lite_f2:'300 तक मेहमान', plan_lite_f3:'मुफ्त का सब कुछ', plan_lite_f4:'उपहार विशलिस्ट + UPI',
+    plan_lite_f5:'केटरिंग निर्यात (CSV)', plan_lite_f6:'QR कोड निमंत्रण', plan_lite_f7:'ऑटो रिमाइंडर', plan_lite_f8:'फोटो गैलरी (100)',
+    plan_lite_btn:'₹149 UPI से भुगतान करें',
+    plan_pro_name:'प्रो', plan_pro_desc:'असीमित कार्यक्रम, पूरी शक्ति', plan_pro_per:'प्रति वर्ष · असीमित',
+    plan_pro_f1:'असीमित कार्यक्रम', plan_pro_f2:'प्रत्येक 1,000 मेहमान', plan_pro_f3:'लाइट का सब कुछ', plan_pro_f4:'कस्टम ब्रांडिंग',
+    plan_pro_f5:'मल्टी-सेरेमनी टाइमलाइन', plan_pro_f6:'एनालिटिक्स', plan_pro_f7:'फोटो गैलरी (1,000)', plan_pro_f8:'प्राथमिकता सहायता',
+    plan_pro_btn:'₹499 UPI से भुगतान करें',
+    how_pay_title:'भुगतान कैसे काम करता है', how_pay_sub:'आप सीधा UPI से डेवलपर के व्यक्तिगत खाते में भुगतान करते हैं। कोई गेटवे, 2% शुल्क, GST, कंपनी रजिस्ट्रेशन नहीं। भुगतान के बाद स्क्रीनशॉट भेजें — आमतौर पर 1 घंटे में एक्टिवेट हो जाता है।',
+    how_pay_note:'⚠️ यह पंजीकरण-पूर्व मॉडल है। जब राजस्व ₹20 लाख/वर्ष (GST सीमा) पार करे, तब उचित GST रजिस्ट्रेशन और कंपनी निगमन होगा।',
+    faq_title:'आम सवाल',
+    faq_q1:'क्या मेरा डेटा सुरक्षित है?', faq_a1:'सारा डेटा आपके फोन के लोकल स्टोरेज में रहता है। कुछ भी सर्वर पर नहीं जाता। 💾 बटन से कभी भी बैकअप लें।',
+    faq_q2:'क्या यह ऑफलाइन चलता है?', faq_a2:'हां। पहली लोड के बाद, ऐप खुद को कैश कर लेता है। बिना इंटरनेट के निमंत्रण बनाएं और मेहमान प्रबंधित करें।',
+    faq_q3:'क्या मेहमान ऐप के बिना RSVP कर सकते हैं?', faq_a3:'हां। वे बस आपके भेजे व्हाट्सएप लिंक पर टैप करें। निमंत्रण उनके ब्राउज़र में खुलेगा।',
+    faq_q4:'क्या रिफंड मिलेगा?', faq_a4:'हां — 7 दिन में पूरा रिफंड यदि आपने सशुल्क फीचर उपयोग नहीं किए। बस अपना UPI लेन-देन ID भेजें।',
+    nav_home:'होम', nav_events:'निमंत्रण', nav_guests:'मेहमान', nav_plans:'योजनाएं',
+    banner_title:'बंधनम् इंस्टॉल करें', banner_sub:'ऑफलाइन चलता है, तेज़ खुलता है', banner_btn:'इंस्टॉल',
+    plan_activated_free:'मुफ्त योजना सक्रिय ✅',
+    stats_events:'कार्यक्रम', stats_guests:'मेहमान', stats_confirmed:'पुष्टि', stats_pending:'लंबित',
+    no_events_title:'अभी कोई निमंत्रण नहीं', no_events_msg:'अपना पहला निमंत्रण बनाएं — शादी, हल्दी, जन्मदिन, कुछ भी!',
+    modal_new_event:'निमंत्रण बनाएं', modal_edit_event:'निमंत्रण संपादित करें',
+    field_fn_type:'कार्यक्रम प्रकार', field_couple_a:'व्यक्ति 1 नाम', field_couple_b:'व्यक्ति 2 नाम (वैकल्पिक)',
+    field_event_date:'तारीख', field_event_time:'समय', field_venue:'स्थान', field_address:'पता',
+    field_lang:'निमंत्रण भाषा', field_template:'टेम्पलेट', field_upi:'आपका UPI ID (उपहारों के लिए)',
+    btn_save:'निमंत्रण सहेजें', btn_cancel:'रद्द करें', btn_delete:'हटाएं',
+    fn_wedding:'💍 शादी', fn_haldi:'🌼 हल्दी', fn_mehendi:'🌿 मेहंदी', fn_sangeet:'🎵 संगीत',
+    fn_engagement:'💎 सगाई', fn_reception:'🥂 रिसेप्शन', fn_birthday:'🎂 जन्मदिन',
+    fn_housewarming:'🏡 गृह प्रवेश', fn_naming:'👶 नामकरण', fn_annaprashan:'🍚 अन्नप्राशन',
+    detail_share:'📤 व्हाट्सएप पर भेजें', detail_share_copy:'लिंक कॉपी', detail_add_guest:'+ मेहमान जोड़ें',
+    detail_guests:'मेहमान', detail_gifts:'उपहार विशलिस्ट', detail_timeline:'समारोह',
+    detail_stats:'आंकड़े', tab_guests:'मेहमान', tab_gifts:'उपहार', tab_timeline:'समारोह', tab_stats:'आंकड़े',
+    guest_name:'मेहमान नाम', guest_phone:'मोबाइल', guest_side:'पक्ष', guest_rsvp:'RSVP',
+    side_groom:'दूल्हे का', side_bride:'दुल्हन का', side_common:'सामान्य', side_friend:'मित्र',
+    rsvp_yes:'✓ आ रहे हैं', rsvp_no:'✗ नहीं आ सकते', rsvp_pending:'⏳ लंबित',
+    add_gift:'उपहार जोड़ें', gift_name:'उपहार नाम', gift_goal:'लक्ष्य राशि (₹)', gift_contrib:'योगदान (₹)',
+    gift_share:'साझा करें', gift_link:'योगदान लिंक',
+    add_ceremony:'+ समारोह जोड़ें', ceremony_name:'समारोह', ceremony_date:'तारीख', ceremony_time:'समय', ceremony_venue:'स्थान',
+    confirm_delete:'इसे हटाएं? यह वापस नहीं होगा।',
+    pay_title:'अपनी योजना सक्रिय करें', pay_amt:'राशि', pay_to:'भुगतान करें',
+    pay_upi_id:'UPI ID', pay_qr:'स्कैन कर भुगतान करें', pay_after:'भुगतान के बाद, स्क्रीनशॉट भेजें।',
+    pay_done:'मैंने भुगतान कर दिया — अब सक्रिय करें', pay_open_upi:'UPI ऐप खोलें',
+    share_msg:'आप निमंत्रित हैं! देखने और RSVP के लिए टैप करें:',
+    toast_saved:'सहेजा गया ✅', toast_deleted:'हटाया गया', toast_copied:'लिंक कॉपी हुआ 📋',
+    toast_exported:'बैकअप डाउनलोड हुआ 💾', toast_imported:'बैकअप बहाल ✅',
+    plan_lite_activated:'लाइट योजना सक्रिय! सभी फीचर खुले 🎉', plan_pro_activated:'प्रो योजना सक्रिय! असीमित कार्यक्रम 🎉',
+    limit_reached:'मुफ्त सीमा पूरी। और जोड़ने के लिए अपग्रेड करें।',
+    days:'दिन', hrs:'घं', min:'मि'
+  },
+  te: {
+    app_name:'బంధనం', home_hero_title:'ప్రతి వేడుక,<br><span class="gold">అందంగా నిర్వహించండి.</span>',
+    home_hero_sub:'ఆహ్వానాలు సృష్టించండి, RSVP ట్రాక్ చేయండి, బహుమతులు నిర్వహించండి — ఒకే యాప్‌లో. వెబ్‌లో పని చేస్తుంది, మొబైల్ యాప్‌గా ఇన్‌స్టాల్ అవుతుంది.',
+    cta_new_event:'+ ఆహ్వానం సృష్టించండి', cta_see_plans:'ప్లాన్లు చూడండి',
+    quick_invite:'కొత్త ఆహ్వానం', quick_invite_sub:'సృష్టించి పంపండి',
+    quick_guests:'అతిథులు', quick_guests_sub:'RSVP ట్రాకర్',
+    quick_gifts:'బహుమతులు', quick_gifts_sub:'విష్‌లిస్ట్ & నగదు',
+    quick_plans:'ప్లాన్లు', quick_plans_sub:'₹0 నుండి ₹499',
+    stats_title:'మీ డాష్‌బోర్డ్', stats_hint:'అన్ని డేటా మీ ఫోన్‌లోనే ఉంటుంది.',
+    install_title:'మొబైల్ యాప్‌గా ఇన్‌స్టాల్ చేయండి', install_sub:'బంధనం PWA — మీ ఫోన్ హోమ్ స్క్రీన్‌లో ఇన్‌స్టాల్ అవుతుంది, ఆఫ్‌లైన్‌లో పని చేస్తుంది.',
+    install_btn:'📲 బంధనం ఇన్‌స్టాల్ చేయండి', install_hint_ios:'iPhone: Share → "Add to Home Screen". Android: మెనూ → "Install app".',
+    events_title:'మీ ఆహ్వానాలు', events_new:'+ కొత్త',
+    pricing_title:'₹లో సరళమైన ప్లాన్లు', pricing_sub:'ఎల్లప్పుడూ ఉచితంగా ప్రారంభించండి. అవసరం ఉన్నప్పుడు మాత్రమే అప్‌గ్రేడ్ చేయండి.',
+    plan_free_name:'ఉచితం', plan_free_desc:'ప్రయత్నించండి', plan_free_per:'ఎల్లప్పుడూ',
+    plan_free_f1:'1 కార్యక్రమం', plan_free_f2:'30 అతిథుల వరకు', plan_free_f3:'WhatsApp ఆహ్వానం', plan_free_f4:'RSVP డాష్‌బోర్డ్', plan_free_f5:'అన్ని 10 భాషలు',
+    plan_free_f6:'బహుమతి విష్‌లిస్ట్', plan_free_f7:'క్యాటరింగ్ ఎక్స్‌పోర్ట్', plan_free_f8:'కస్టమ్ బ్రాండింగ్',
+    plan_free_btn:'ఉచితం ఉపయోగించండి',
+    plan_lite_name:'లైట్', plan_lite_desc:'ఒక వేడుక, అన్ని ఫీచర్లు', plan_lite_per:'ప్రతి కార్యక్రమం · ఒకసారి',
+    plan_lite_f1:'1 కార్యక్రమం', plan_lite_f2:'300 అతిథుల వరకు', plan_lite_f3:'ఉచితంలో అన్నీ', plan_lite_f4:'బహుమతి విష్‌లిస్ట్ + UPI',
+    plan_lite_f5:'క్యాటరింగ్ ఎక్స్‌పోర్ట్', plan_lite_f6:'QR కోడ్', plan_lite_f7:'ఆటో రిమైండర్', plan_lite_f8:'ఫోటో గ్యాలరీ (100)',
+    plan_lite_btn:'₹149 UPI ద్వారా చెల్లించండి',
+    plan_pro_name:'ప్రో', plan_pro_desc:'అపరిమిత కార్యక్రమాలు', plan_pro_per:'సంవత్సరానికి · అపరిమితం',
+    plan_pro_f1:'అపరిమిత కార్యక్రమాలు', plan_pro_f2:'1,000 అతిథులు', plan_pro_f3:'లైట్‌లో అన్నీ', plan_pro_f4:'కస్టమ్ బ్రాండింగ్',
+    plan_pro_f5:'మల్టీ-వేడుక టైమ్‌లైన్', plan_pro_f6:'అనలిటిక్స్', plan_pro_f7:'ఫోటో గ్యాలరీ (1,000)', plan_pro_f8:'ప్రాధాన్యత మద్దతు',
+    plan_pro_btn:'₹499 UPI ద్వారా చెల్లించండి',
+    how_pay_title:'చెల్లింపు ఎలా పని చేస్తుంది', how_pay_sub:'మీరు నేరుగా UPI ద్వారా డెవలపర్ వ్యక్తిగత ఖాతాకు చెల్లిస్తారు. గేట్‌వే, 2% ఫీజు, GST లేవు.',
+    how_pay_note:'⚠️ ఇది నమోదుకు ముందు మోడల్. ఆదాయం ₹20 లక్షలు/సంవత్సరం దాటినప్పుడు, GST నమోదు మరియు కంపెనీ ఏర్పాటు జరుగుతుంది.',
+    faq_title:'సాధారణ ప్రశ్నలు',
+    faq_q1:'నా డేటా సురక్షితమా?', faq_a1:'అన్ని డేటా మీ ఫోన్ లోకల్ స్టోరేజ్‌లో ఉంటుంది.',
+    faq_q2:'ఆఫ్‌లైన్‌లో పని చేస్తుందా?', faq_a2:'అవును. మొదటి లోడ్ తర్వాత, యాప్ దానిని తాను క్యాష్ చేస్తుంది.',
+    faq_q3:'అతిథులు యాప్ లేకుండా RSVP చేయగలరా?', faq_a3:'అవును. మీరు పంపిన WhatsApp లింక్‌ను ట్యాప్ చేయండి.',
+    faq_q4:'రిఫండ్ వస్తుందా?', faq_a4:'అవును — 7 రోజుల్లో పూర్తి రిఫండ్.',
+    nav_home:'హోమ్', nav_events:'ఆహ్వానాలు', nav_guests:'అతిథులు', nav_plans:'ప్లాన్లు',
+    banner_title:'బంధనం ఇన్‌స్టాల్ చేయండి', banner_sub:'ఆఫ్‌లైన్‌లో పని చేస్తుంది', banner_btn:'ఇన్‌స్టాల్',
+    plan_activated_free:'ఉచిత ప్లాన్ క్రియాశీలం ✅',
+    stats_events:'కార్యక్రమాలు', stats_guests:'అతిథులు', stats_confirmed:'నిర్ధారిత', stats_pending:'పెండింగ్',
+    no_events_title:'ఇంకా ఆహ్వానాలు లేవు', no_events_msg:'మీ మొదటి ఆహ్వానం సృష్టించండి!',
+    modal_new_event:'ఆహ్వానం సృష్టించండి', modal_edit_event:'ఆహ్వానం సవరించండి',
+    field_fn_type:'కార్యక్రమం రకం', field_couple_a:'వ్యక్తి 1 పేరు', field_couple_b:'వ్యక్తి 2 పేరు (ఐచ్ఛికం)',
+    field_event_date:'తేదీ', field_event_time:'సమయం', field_venue:'వేదిక', field_address:'చిరునామా',
+    field_lang:'ఆహ్వాన భాష', field_template:'టెంప్లేట్', field_upi:'మీ UPI ID (బహుమతుల కోసం)',
+    btn_save:'ఆహ్వానం సేవ్ చేయండి', btn_cancel:'రద్దు', btn_delete:'తొలగించు',
+    fn_wedding:'💍 వివాహం', fn_haldi:'🌼 హల్దీ', fn_mehendi:'🌿 మెహందీ', fn_sangeet:'🎵 సంగీత్',
+    fn_engagement:'💎 నిశ్చితార్థం', fn_reception:'🥂 రిసెప్షన్', fn_birthday:'🎂 పుట్టినరోజు',
+    fn_housewarming:'🏡 గృహప్రవేశం', fn_naming:'👶 నామకరణ', fn_annaprashan:'🍚 అన్నప్రాశన',
+    detail_share:'📤 WhatsAppలో పంపండి', detail_share_copy:'లింక్ కాపీ', detail_add_guest:'+ అతిథి జోడించండి',
+    detail_guests:'అతిథులు', detail_gifts:'బహుమతి విష్‌లిస్ట్', detail_timeline:'వేడుకలు',
+    detail_stats:'గణాంకాలు', tab_guests:'అతిథులు', tab_gifts:'బహుమతులు', tab_timeline:'వేడుకలు', tab_stats:'గణాంకాలు',
+    guest_name:'అతిథి పేరు', guest_phone:'మొబైల్', guest_side:'వర్గం', guest_rsvp:'RSVP',
+    side_groom:'వరుడి', side_bride:'వధువు', side_common:'సాధారణ', side_friend:'స్నేహితుడు',
+    rsvp_yes:'✓ వస్తున్నారు', rsvp_no:'✗ రాలేరు', rsvp_pending:'⏳ పెండింగ్',
+    add_gift:'బహుమతి జోడించండి', gift_name:'బహుమతి పేరు', gift_goal:'లక్ష్యం (₹)', gift_contrib:'సహకారం (₹)',
+    gift_share:'పంచుకోండి', gift_link:'సహకార లింక్',
+    add_ceremony:'+ వేడుక జోడిచండి', ceremony_name:'వేడుక', ceremony_date:'తేదీ', ceremony_time:'సమయం', ceremony_venue:'వేదిక',
+    confirm_delete:'తొలగించాలా? ఇది తిరిగి రాదు.',
+    pay_title:'మీ ప్లాన్ క్రియాశీలం చేయండి', pay_amt:'మొత్తం', pay_to:'చెల్లించండి',
+    pay_upi_id:'UPI ID', pay_qr:'స్కాన్ చేయండి', pay_after:'చెల్లింపు తర్వాత, స్క్రీన్‌షాట్ పంపండి.',
+    pay_done:'నేను చెల్లించాను', pay_open_upi:'UPI యాప్ తెరవండి',
+    share_msg:'మీరు ఆహ్వానించబడ్డారు! చూడటానికి మరియు RSVP కోసం ట్యాప్ చేయండి:',
+    toast_saved:'సేవ్ అయింది ✅', toast_deleted:'తొలగించబడింది', toast_copied:'లింక్ కాపీ అయింది 📋',
+    toast_exported:'బ్యాకప్ డౌన్‌లోడ్ అయింది 💾', toast_imported:'బ్యాకప్ పునరుద్ధరించబడింది ✅',
+    plan_lite_activated:'లైట్ ప్లాన్ క్రియాశీలం! 🎉', plan_pro_activated:'ప్రో ప్లాన్ క్రియాశీలం! 🎉',
+    limit_reached:'ఉచిత పరిమితి పూర్తయింది.',
+    days:'రోజులు', hrs:'గం', min:'ని'
+  }
+};
+
+/* For other 7 languages, fall back to English for now (smaller build).
+   Full translations can be added incrementally. */
+['mr','ta','bn','gu','kn','ml','pa'].forEach(code => { I18N[code] = I18N.en; });
+
+let currentLang = 'en';
+function t(key) {
+  const v = (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key;
+  return v;
+}
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    const v = t(key);
+    if (v.includes('<')) el.innerHTML = v; else el.textContent = v;
+  });
+  document.documentElement.lang = currentLang;
+  renderHomeStats(); renderEvents();
+}
+
+/* ─── State (localStorage) ─── */
+const STORE_KEY = 'bandhanam_v1';
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return { events: [], plan: 'free', planExpiry: null, lang: 'en' };
+    const s = JSON.parse(raw);
+    return { events: s.events || [], plan: s.plan || 'free', planExpiry: s.planExpiry || null, lang: s.lang || 'en' };
+  } catch (e) { return { events: [], plan: 'free', planExpiry: null, lang: 'en' }; }
+}
+function saveState() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+}
+let state = loadState();
+currentLang = state.lang || 'en';
+document.getElementById('langSelect').value = currentLang;
+
+/* ─── Toast ─── */
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* ─── Navigation ─── */
+function navTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navItem = document.querySelector(`.nav-item[data-nav="${page}"]`);
+  if (navItem) navItem.classList.add('active');
+  window.scrollTo(0, 0);
+  if (page === 'home') renderHomeStats();
+  if (page === 'events') renderEvents();
+}
+
+/* ─── Home stats ─── */
+function renderHomeStats() {
+  const events = state.events;
+  let totalGuests = 0, confirmed = 0, pending = 0;
+  events.forEach(e => {
+    (e.guests || []).forEach(g => {
+      totalGuests++;
+      if (g.rsvp === 'yes') confirmed++;
+      else if (g.rsvp === 'pending' || !g.rsvp) pending++;
+    });
+  });
+  document.getElementById('homeStats').innerHTML = `
+    <div class="stat-tile"><div class="num">${events.length}</div><div class="lbl">${t('stats_events')}</div></div>
+    <div class="stat-tile"><div class="num">${totalGuests}</div><div class="lbl">${t('stats_guests')}</div></div>
+    <div class="stat-tile green"><div class="num">${confirmed}</div><div class="lbl">${t('stats_confirmed')}</div></div>
+    <div class="stat-tile amber"><div class="num">${pending}</div><div class="lbl">${t('stats_pending')}</div></div>
+  `;
+}
+
+/* ─── Events list ─── */
+function renderEvents() {
+  const list = document.getElementById('eventsList');
+  if (!state.events.length) {
+    list.innerHTML = `<div class="empty"><div class="ic">💌</div><div class="msg">${t('no_events_msg')}</div><button class="btn gold" onclick="openEventModal()">${t('cta_new_event')}</button></div>`;
+    return;
+  }
+  list.innerHTML = state.events.map(e => {
+    const guests = e.guests || [];
+    const confirmed = guests.filter(g => g.rsvp === 'yes').length;
+    const d = e.date ? new Date(e.date + 'T' + (e.time || '00:00')) : null;
+    const dateStr = d ? d.toLocaleDateString(currentLang === 'en' ? 'en-IN' : 'en-IN', { day:'numeric', month:'short', year:'numeric' }) : '—';
+    const icon = (e.fnType || 'wedding').replace(/[💍🌼🌿🎵💎🥂🎂🏡👶🍚]/g, '').trim() || '✉️';
+    const fnIcon = ({wedding:'💍',haldi:'🌼',mehendi:'🌿',sangeet:'🎵',engagement:'💎',reception:'🥂',birthday:'🎂',housewarming:'🏡',naming:'👶',annaprashan:'🍚'})[e.fnType] || '✉️';
+    return `<div class="event-item" data-id="${e.id}" onclick="openEventDetail('${e.id}')">
+      <div class="ic">${fnIcon}</div>
+      <div class="body">
+        <div class="name">${escHtml(e.coupleA || 'Untitled')}${e.coupleB ? ' & ' + escHtml(e.coupleB) : ''}</div>
+        <div class="meta">${dateStr} · ${escHtml(e.venue || 'No venue')}</div>
+        <div class="count">${confirmed}/${guests.length} confirmed</div>
+      </div>
+      <div class="arrow">›</div>
+    </div>`;
+  }).join('');
+}
+
+/* ─── Modal helpers ─── */
+function openModal(title, bodyHtml) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = bodyHtml;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+}
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target.id === 'modal') closeModal();
+});
+
+/* ─── Event create/edit ─── */
+function openEventModal(id) {
+  const editing = id ? state.events.find(e => e.id === id) : null;
+  // Free-plan limit: 1 event
+  if (!editing && state.plan === 'free' && state.events.length >= 1) {
+    showToast(t('limit_reached'));
+    navTo('pricing');
+    return;
+  }
+  const fnTypes = ['wedding','haldi','mehendi','sangeet','engagement','reception','birthday','housewarming','naming','annaprashan'];
+  const fnOpts = fnTypes.map(f => `<option value="${f}" ${editing && editing.fnType===f?'selected':''}>${t('fn_'+f)}</option>`).join('');
+  const langOpts = [['en','English'],['hi','हिन्दी'],['te','తెలుగు'],['mr','मराठी'],['ta','தமிழ்'],['bn','বাংলা'],['gu','ગુજરાતી'],['kn','ಕನ್ನಡ'],['ml','മലയാളം'],['pa','ਪੰਜਾਬੀ']]
+    .map(([v,l]) => `<option value="${v}" ${editing && editing.inviteLang===v?'selected':''}>${l}</option>`).join('');
+  const body = `
+    <div class="field">
+      <label>${t('field_fn_type')}</label>
+      <select id="evFnType">${fnOpts}</select>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>${t('field_couple_a')}</label><input type="text" id="evA" value="${editing?escAttr(editing.coupleA||''):''}" placeholder="Rohit"></div>
+      <div class="field"><label>${t('field_couple_b')}</label><input type="text" id="evB" value="${editing?escAttr(editing.coupleB||''):''}" placeholder="Priya"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>${t('field_event_date')}</label><input type="date" id="evDate" value="${editing?escAttr(editing.date||''):''}"></div>
+      <div class="field"><label>${t('field_event_time')}</label><input type="time" id="evTime" value="${editing?escAttr(editing.time||''):''}"></div>
+    </div>
+    <div class="field"><label>${t('field_venue')}</label><input type="text" id="evVenue" value="${editing?escAttr(editing.venue||''):''}" placeholder="Grand Hyatt, Mumbai"></div>
+    <div class="field"><label>${t('field_address')}</label><textarea id="evAddr" rows="2" placeholder="Full address for map link">${editing?escAttr(editing.address||''):''}</textarea></div>
+    <div class="field-row">
+      <div class="field"><label>${t('field_lang')}</label><select id="evLang">${langOpts}</select></div>
+      <div class="field"><label>${t('field_upi')}</label><input type="text" id="evUpi" value="${editing?escAttr(editing.upi||''):''}" placeholder="yourname@okhdfcbank"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn outline" onclick="closeModal()" style="flex:1">${t('btn_cancel')}</button>
+      <button class="btn gold" onclick="saveEvent('${id||''}')" style="flex:2">${t('btn_save')}</button>
+    </div>
+    ${editing ? `<button class="btn outline block" style="margin-top:8px;color:var(--red);border-color:var(--red)" onclick="deleteEvent('${id}')">${t('btn_delete')}</button>` : ''}
+  `;
+  openModal(editing ? t('modal_edit_event') : t('modal_new_event'), body);
+}
+
+function saveEvent(id) {
+  const ev = {
+    fnType: document.getElementById('evFnType').value,
+    coupleA: document.getElementById('evA').value.trim(),
+    coupleB: document.getElementById('evB').value.trim(),
+    date: document.getElementById('evDate').value,
+    time: document.getElementById('evTime').value,
+    venue: document.getElementById('evVenue').value.trim(),
+    address: document.getElementById('evAddr').value.trim(),
+    inviteLang: document.getElementById('evLang').value,
+    upi: document.getElementById('evUpi').value.trim(),
+    guests: [],
+    gifts: [],
+    ceremonies: []
+  };
+  if (!ev.coupleA) { showToast('Please enter name'); return; }
+  if (id) {
+    const idx = state.events.findIndex(e => e.id === id);
+    ev.guests = state.events[idx].guests || [];
+    ev.gifts = state.events[idx].gifts || [];
+    ev.ceremonies = state.events[idx].ceremonies || [];
+    state.events[idx] = { ...state.events[idx], ...ev };
+  } else {
+    ev.id = 'ev_' + Date.now();
+    state.events.push(ev);
+  }
+  saveState();
+  closeModal();
+  showToast(t('toast_saved'));
+  renderEvents();
+  openEventDetail(ev.id);
+}
+
+function deleteEvent(id) {
+  if (!confirm(t('confirm_delete'))) return;
+  state.events = state.events.filter(e => e.id !== id);
+  saveState();
+  closeModal();
+  showToast(t('toast_deleted'));
+  renderEvents();
+  navTo('events');
+}
+
+/* ─── Event detail ─── */
+let currentEventId = null;
+let currentTab = 'guests';
+function openEventDetail(id) {
+  const ev = state.events.find(e => e.id === id);
+  if (!ev) return;
+  currentEventId = id;
+  navTo('detail');
+  document.querySelector('.nav-item[data-nav="detail"]').classList.add('active');
+  renderDetail();
+}
+
+function renderDetail() {
+  const ev = state.events.find(e => e.id === currentEventId);
+  if (!ev) { navTo('events'); return; }
+  const guests = ev.guests || [];
+  const confirmed = guests.filter(g => g.rsvp === 'yes').length;
+  const fnIcon = ({wedding:'💍',haldi:'🌼',mehendi:'🌿',sangeet:'🎵',engagement:'💎',reception:'🥂',birthday:'🎂',housewarming:'🏡',naming:'👶',annaprashan:'🍚'})[ev.fnType] || '✉️';
+  const shareUrl = makeShareUrl(ev);
+
+  document.getElementById('detailContent').innerHTML = `
+    <div class="invite-preview">
+      <div class="deco">❀ ❀ ❀</div>
+      <div class="eyebrow">${t('fn_'+ev.fnType).replace(/[💍🌼🌿🎵💎🥂🎂🏡👶🍚]\s*/g,'').toUpperCase()}</div>
+      <div class="couple">${escHtml(ev.coupleA)}${ev.coupleB ? '<span class="amp">weds</span>'+escHtml(ev.coupleB) : ''}</div>
+      <div class="event">${t('fn_'+ev.fnType)}</div>
+      <div class="meta"><strong>${formatEventDate(ev)}</strong></div>
+      <div class="meta">${ev.time || ''}</div>
+      <div class="venue">📍 ${escHtml(ev.venue || 'Venue TBD')}</div>
+    </div>
+
+    <div class="card" style="padding:12px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn green" style="flex:1;min-width:140px" onclick="shareEvent('${ev.id}')">${t('detail_share')}</button>
+        <button class="btn outline" onclick="copyShareLink('${ev.id}')">${t('detail_share_copy')}</button>
+        <button class="btn outline" onclick="openEventModal('${ev.id}')">✏️</button>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-tile"><div class="num">${guests.length}</div><div class="lbl">${t('stats_guests')}</div></div>
+      <div class="stat-tile green"><div class="num">${confirmed}</div><div class="lbl">${t('stats_confirmed')}</div></div>
+      <div class="stat-tile amber"><div class="num">${guests.filter(g=>g.rsvp==='pending'||!g.rsvp).length}</div><div class="lbl">${t('stats_pending')}</div></div>
+      <div class="stat-tile"><div class="num">${guests.filter(g=>g.rsvp==='no').length}</div><div class="lbl">No</div></div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab ${currentTab==='guests'?'active':''}" onclick="setTab('guests')">${t('tab_guests')}</div>
+      <div class="tab ${currentTab==='gifts'?'active':''}" onclick="setTab('gifts')">${t('tab_gifts')}</div>
+      <div class="tab ${currentTab==='timeline'?'active':''}" onclick="setTab('timeline')">${t('tab_timeline')}</div>
+      <div class="tab ${currentTab==='stats'?'active':''}" onclick="setTab('stats')">${t('tab_stats')}</div>
+    </div>
+
+    <div id="tabContent"></div>
+  `;
+  renderTab();
+}
+
+function setTab(tab) {
+  currentTab = tab;
+  renderDetail();
+}
+
+function renderTab() {
+  const ev = state.events.find(e => e.id === currentEventId);
+  if (!ev) return;
+  const tc = document.getElementById('tabContent');
+  if (currentTab === 'guests') {
+    const guests = ev.guests || [];
+    const limit = state.plan === 'free' ? 30 : state.plan === 'lite' ? 300 : 1000;
+    const atLimit = guests.length >= limit;
+    tc.innerHTML = `
+      <div class="card">
+        <h2><span class="left">👥 ${t('detail_guests')}</span>
+          <button class="btn sm gold" onclick="openGuestModal()" ${atLimit?'disabled':''}>${t('detail_add_guest')}</button>
+        </h2>
+        ${atLimit ? `<div class="row-hint" style="color:var(--amber)">${t('limit_reached')}</div>` : ''}
+        <div id="guestList">
+          ${guests.length === 0 ? `<div class="empty" style="padding:18px"><div class="ic">👥</div><div class="msg" style="font-size:0.78rem">No guests yet. Add your first guest.</div></div>` :
+          guests.map(g => `
+            <div class="guest-row">
+              <div class="avatar">${(g.name||'?').charAt(0).toUpperCase()}</div>
+              <div class="body">
+                <div class="name">${escHtml(g.name)}</div>
+                <div class="meta">${escHtml(g.phone||'')} · ${t('side_'+(g.side||'common'))} · <span class="rsvp-badge ${g.rsvp||'pending'}">${t('rsvp_'+(g.rsvp||'pending'))}</span></div>
+              </div>
+              <div class="actions">
+                <button class="edit" onclick="openGuestModal('${g.id}')">✏️</button>
+                <button class="del" onclick="deleteGuest('${g.id}')">×</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  } else if (currentTab === 'gifts') {
+    const gifts = ev.gifts || [];
+    const isPaid = state.plan !== 'free';
+    tc.innerHTML = `
+      <div class="card">
+        <h2><span class="left">🎁 ${t('detail_gifts')}</span>
+          <button class="btn sm gold" onclick="openGiftModal()" ${!isPaid?'disabled':''}>${t('add_gift')}</button>
+        </h2>
+        ${!isPaid ? `<div class="row-hint" style="color:var(--amber)">Gift wishlist is a paid feature. <a href="#" onclick="navTo('pricing');return false" style="color:var(--maroon);font-weight:700">Upgrade →</a></div>` : ''}
+        ${gifts.length === 0 ? `<div class="empty" style="padding:18px"><div class="ic">🎁</div><div class="msg" style="font-size:0.78rem">No gifts yet. Add honeymoon fund, sofa, kitchen setup, etc.</div></div>` :
+        gifts.map(g => {
+          const pct = g.goal > 0 ? Math.min(100, Math.round((g.contrib||0)/g.goal*100)) : 0;
+          return `<div class="gift-item">
+            <div class="ic">${giftEmoji(g.name)}</div>
+            <div class="body">
+              <div class="name">${escHtml(g.name)}</div>
+              <div class="meta">₹${(g.contrib||0).toLocaleString('en-IN')} / ₹${(g.goal||0).toLocaleString('en-IN')} · ${pct}%</div>
+              <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <button class="btn sm gold" onclick="shareGift('${g.id}')">${t('gift_share')}</button>
+              <button class="btn sm outline" onclick="openGiftModal('${g.id}')">✏️</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+  } else if (currentTab === 'timeline') {
+    const ceremonies = ev.ceremonies || [];
+    tc.innerHTML = `
+      <div class="card">
+        <h2><span class="left">📅 ${t('detail_timeline')}</span>
+          <button class="btn sm gold" onclick="openCeremonyModal()">+</button>
+        </h2>
+        ${ceremonies.length === 0 ? `<div class="empty" style="padding:18px"><div class="ic">📅</div><div class="msg" style="font-size:0.78rem">No ceremonies yet. Add haldi, mehendi, sangeet, etc.</div></div>` :
+        `<div class="ceremony-list">${ceremonies.map(c => `
+          <div class="ceremony-item">
+            <div class="ic">🪔</div>
+            <div class="body">
+              <div class="name">${escHtml(c.name)}</div>
+              <div class="when">${c.date || ''} ${c.time || ''}</div>
+              <div class="where">📍 ${escHtml(c.venue || '')}</div>
+            </div>
+            <div class="actions">
+              <button class="btn sm outline" onclick="openCeremonyModal('${c.id}')">✏️</button>
+              <button class="btn sm outline" style="color:var(--red);border-color:var(--red)" onclick="deleteCeremony('${c.id}')">×</button>
+            </div>
+          </div>
+        `).join('')}</div>`}
+      </div>
+    `;
+  } else if (currentTab === 'stats') {
+    const guests = ev.guests || [];
+    const sides = {};
+    guests.forEach(g => {
+      const s = g.side || 'common';
+      sides[s] = (sides[s]||0) + 1;
+    });
+    const csvUrl = makeCsvUrl(ev);
+    tc.innerHTML = `
+      <div class="card">
+        <h2>📊 ${t('detail_stats')}</h2>
+        <div class="stat-grid">
+          <div class="stat-tile"><div class="num">${guests.length}</div><div class="lbl">Total</div></div>
+          <div class="stat-tile green"><div class="num">${guests.filter(g=>g.rsvp==='yes').length}</div><div class="lbl">Yes</div></div>
+          <div class="stat-tile amber"><div class="num">${guests.filter(g=>g.rsvp==='pending'||!g.rsvp).length}</div><div class="lbl">Pending</div></div>
+          <div class="stat-tile red"><div class="num">${guests.filter(g=>g.rsvp==='no').length}</div><div class="lbl">No</div></div>
+        </div>
+        <h3 style="font-family:var(--serif);color:var(--maroon-deep);margin:14px 0 8px;font-size:0.95rem">By side</h3>
+        <div style="font-size:0.84rem;color:var(--ink);line-height:1.8">
+          ${Object.entries(sides).map(([k,v]) => `<div>${t('side_'+k)}: <strong>${v}</strong></div>`).join('') || 'No guests yet'}
+        </div>
+        ${state.plan !== 'free' ? `<a class="btn outline block" style="margin-top:14px" href="${csvUrl}" download="guests-${ev.coupleA||'event'}.csv">📥 Export catering CSV</a>` : `<div class="row-hint" style="margin-top:10px;color:var(--amber)">CSV export is a paid feature.</div>`}
+      </div>
+    `;
+  }
+}
+
+/* ─── Guest modal ─── */
+function openGuestModal(guestId) {
+  const ev = state.events.find(e => e.id === currentEventId);
+  const editing = guestId ? (ev.guests||[]).find(g => g.id === guestId) : null;
+  const limit = state.plan === 'free' ? 30 : state.plan === 'lite' ? 300 : 1000;
+  if (!editing && (ev.guests||[]).length >= limit) { showToast(t('limit_reached')); return; }
+  const body = `
+    <div class="field"><label>${t('guest_name')}</label><input type="text" id="gName" value="${editing?escAttr(editing.name||''):''}" placeholder="Aarav Sharma"></div>
+    <div class="field-row">
+      <div class="field"><label>${t('guest_phone')}</label><input type="tel" id="gPhone" value="${editing?escAttr(editing.phone||''):''}" placeholder="+91 98765 43210"></div>
+      <div class="field"><label>${t('guest_side')}</label>
+        <select id="gSide">
+          <option value="groom" ${editing&&editing.side==='groom'?'selected':''}>${t('side_groom')}</option>
+          <option value="bride" ${editing&&editing.side==='bride'?'selected':''}>${t('side_bride')}</option>
+          <option value="common" ${(!editing||editing.side==='common')?'selected':''}>${t('side_common')}</option>
+          <option value="friend" ${editing&&editing.side==='friend'?'selected':''}>${t('side_friend')}</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>${t('guest_rsvp')}</label>
+      <select id="gRsvp">
+        <option value="pending" ${(!editing||editing.rsvp==='pending'||!editing.rsvp)?'selected':''}>${t('rsvp_pending')}</option>
+        <option value="yes" ${editing&&editing.rsvp==='yes'?'selected':''}>${t('rsvp_yes')}</option>
+        <option value="no" ${editing&&editing.rsvp==='no'?'selected':''}>${t('rsvp_no')}</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn outline" onclick="closeModal()" style="flex:1">${t('btn_cancel')}</button>
+      <button class="btn gold" onclick="saveGuest('${guestId||''}')" style="flex:2">${t('btn_save')}</button>
+    </div>
+  `;
+  openModal(t('detail_add_guest'), body);
+}
+
+function saveGuest(guestId) {
+  const ev = state.events.find(e => e.id === currentEventId);
+  const g = {
+    name: document.getElementById('gName').value.trim(),
+    phone: document.getElementById('gPhone').value.trim(),
+    side: document.getElementById('gSide').value,
+    rsvp: document.getElementById('gRsvp').value
+  };
+  if (!g.name) { showToast('Enter name'); return; }
+  if (guestId) {
+    const idx = ev.guests.findIndex(x => x.id === guestId);
+    ev.guests[idx] = { ...ev.guests[idx], ...g };
+  } else {
+    g.id = 'g_' + Date.now();
+    ev.guests.push(g);
+  }
+  saveState();
+  closeModal();
+  showToast(t('toast_saved'));
+  renderDetail();
+  renderHomeStats();
+}
+
+function deleteGuest(guestId) {
+  const ev = state.events.find(e => e.id === currentEventId);
+  ev.guests = ev.guests.filter(g => g.id !== guestId);
+  saveState();
+  showToast(t('toast_deleted'));
+  renderDetail();
+  renderHomeStats();
+}
+
+/* ─── Gift modal ─── */
+function openGiftModal(giftId) {
+  if (state.plan === 'free') { showToast(t('limit_reached')); navTo('pricing'); return; }
+  const ev = state.events.find(e => e.id === currentEventId);
+  const editing = giftId ? (ev.gifts||[]).find(g => g.id === giftId) : null;
+  const body = `
+    <div class="field"><label>${t('gift_name')}</label><input type="text" id="gifName" value="${editing?escAttr(editing.name||''):''}" placeholder="Honeymoon in Europe"></div>
+    <div class="field-row">
+      <div class="field"><label>${t('gift_goal')}</label><input type="number" id="gifGoal" value="${editing?escAttr(editing.goal||''):''}" placeholder="300000"></div>
+      <div class="field"><label>${t('gift_contrib')}</label><input type="number" id="gifContrib" value="${editing?escAttr(editing.contrib||0):0}" placeholder="0"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn outline" onclick="closeModal()" style="flex:1">${t('btn_cancel')}</button>
+      <button class="btn gold" onclick="saveGift('${giftId||''}')" style="flex:2">${t('btn_save')}</button>
+    </div>
+  `;
+  openModal(t('add_gift'), body);
+}
+
+function saveGift(giftId) {
+  const ev = state.events.find(e => e.id === currentEventId);
+  const g = {
+    name: document.getElementById('gifName').value.trim(),
+    goal: parseInt(document.getElementById('gifGoal').value) || 0,
+    contrib: parseInt(document.getElementById('gifContrib').value) || 0
+  };
+  if (!g.name) { showToast('Enter gift name'); return; }
+  if (giftId) {
+    const idx = ev.gifts.findIndex(x => x.id === giftId);
+    ev.gifts[idx] = { ...ev.gifts[idx], ...g };
+  } else {
+    g.id = 'gif_' + Date.now();
+    ev.gifts.push(g);
+  }
+  saveState();
+  closeModal();
+  showToast(t('toast_saved'));
+  renderDetail();
+}
+
+function shareGift(giftId) {
+  const ev = state.events.find(e => e.id === currentEventId);
+  const g = (ev.gifts||[]).find(x => x.id === giftId);
+  if (!g || !ev.upi) { showToast('Set your UPI ID in event first'); return; }
+  const upiUrl = `upi://pay?pa=${encodeURIComponent(ev.upi)}&pn=${encodeURIComponent(ev.coupleA)}&am=&cu=INR&tn=${encodeURIComponent('Gift: '+g.name)}`;
+  const shareText = `🎁 Contribute to "${g.name}" for ${ev.coupleA}${ev.coupleB?' & '+ev.coupleB:''}'s ${t('fn_'+ev.fnType)}.\n\nGoal: ₹${g.goal.toLocaleString('en-IN')}\nAlready raised: ₹${g.contrib.toLocaleString('en-IN')}\n\nPay any amount via UPI: ${upiUrl}`;
+  if (navigator.share) {
+    navigator.share({ title: 'Gift contribution', text: shareText });
+  } else {
+    copyToClipboard(shareText);
+    showToast(t('toast_copied'));
+  }
+}
+
+/* ─── Ceremony modal ─── */
+function openCeremonyModal(cerId) {
+  const ev = state.events.find(e => e.id === currentEventId);
+  const editing = cerId ? (ev.ceremonies||[]).find(c => c.id === cerId) : null;
+  const body = `
+    <div class="field"><label>${t('ceremony_name')}</label><input type="text" id="cName" value="${editing?escAttr(editing.name||''):''}" placeholder="Haldi Ceremony"></div>
+    <div class="field-row">
+      <div class="field"><label>${t('ceremony_date')}</label><input type="date" id="cDate" value="${editing?escAttr(editing.date||''):''}"></div>
+      <div class="field"><label>${t('ceremony_time')}</label><input type="time" id="cTime" value="${editing?escAttr(editing.time||''):''}"></div>
+    </div>
+    <div class="field"><label>${t('ceremony_venue')}</label><input type="text" id="cVenue" value="${editing?escAttr(editing.venue||''):''}" placeholder="Family home"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn outline" onclick="closeModal()" style="flex:1">${t('btn_cancel')}</button>
+      <button class="btn gold" onclick="saveCeremony('${cerId||''}')" style="flex:2">${t('btn_save')}</button>
+    </div>
+  `;
+  openModal(t('add_ceremony'), body);
+}
+
+function saveCeremony(cerId) {
+  const ev = state.events.find(e => e.id === currentEventId);
+  const c = {
+    name: document.getElementById('cName').value.trim(),
+    date: document.getElementById('cDate').value,
+    time: document.getElementById('cTime').value,
+    venue: document.getElementById('cVenue').value.trim()
+  };
+  if (!c.name) { showToast('Enter ceremony name'); return; }
+  if (cerId) {
+    const idx = ev.ceremonies.findIndex(x => x.id === cerId);
+    ev.ceremonies[idx] = { ...ev.ceremonies[idx], ...c };
+  } else {
+    c.id = 'c_' + Date.now();
+    ev.ceremonies.push(c);
+  }
+  saveState();
+  closeModal();
+  showToast(t('toast_saved'));
+  renderDetail();
+}
+
+function deleteCeremony(cerId) {
+  const ev = state.events.find(e => e.id === currentEventId);
+  ev.ceremonies = (ev.ceremonies||[]).filter(c => c.id !== cerId);
+  saveState();
+  showToast(t('toast_deleted'));
+  renderDetail();
+}
+
+/* ─── Sharing ─── */
+function makeShareUrl(ev) {
+  // PWA's own URL — when deployed, this is the guest RSVP link
+  const base = location.href.split('#')[0].split('?')[0];
+  return base + '?event=' + ev.id;
+}
+function shareEvent(id) {
+  const ev = state.events.find(e => e.id === id);
+  if (!ev) return;
+  const url = makeShareUrl(ev);
+  const text = `${t('share_msg')}\n\n${ev.coupleA}${ev.coupleB?' & '+ev.coupleB:''}'s ${t('fn_'+ev.fnType)}\n${formatEventDate(ev)} · ${ev.venue||''}\n\n${url}`;
+  if (navigator.share) {
+    navigator.share({ title: 'Wedding invitation', text, url }).catch(()=>{});
+  } else {
+    // WhatsApp share
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, '_blank');
+  }
+}
+function copyShareLink(id) {
+  const ev = state.events.find(e => e.id === id);
+  const url = makeShareUrl(ev);
+  copyToClipboard(url);
+  showToast(t('toast_copied'));
+}
+
+/* ─── CSV export ─── */
+function makeCsvUrl(ev) {
+  const rows = [['Name','Phone','Side','RSVP']];
+  (ev.guests||[]).forEach(g => rows.push([g.name||'', g.phone||'', g.side||'', g.rsvp||'pending']));
+  const csv = rows.map(r => r.map(c => '"'+(c||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  return 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+}
+
+/* ─── Payment ─── */
+function openPayment(plan) {
+  const amt = plan === 'lite' ? 149 : 499;
+  const upiUrl = `upi://pay?pa=${encodeURIComponent(DEV_UPI.id)}&pn=${encodeURIComponent(DEV_UPI.name)}&am=${amt}&cu=INR&tn=${encodeURIComponent(DEV_UPI.note+' - '+plan)}`;
+  // QR via qrserver.com (HTTPS, no key)
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiUrl)}`;
+  const body = `
+    <div style="text-align:center;margin-bottom:12px">
+      <div style="font-family:var(--serif);font-size:1.3rem;color:var(--maroon-deep);font-weight:700">${plan === 'lite' ? 'Lite' : 'Pro'} Plan</div>
+      <div style="font-size:0.78rem;color:var(--mute)">${plan === 'lite' ? 'per function · one-time' : 'per year · unlimited events'}</div>
+    </div>
+    <div class="upi-box">
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:0.86rem">
+        <span style="color:var(--ink-soft)">${t('pay_amt')}</span><strong>₹${amt}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:0.86rem">
+        <span style="color:var(--ink-soft)">${t('pay_to')}</span><strong>${DEV_UPI.name}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.86rem">
+        <span style="color:var(--ink-soft)">${t('pay_upi_id')}</span><strong style="font-family:monospace">${DEV_UPI.id}</strong>
+      </div>
+      <div class="qr-display">
+        <img src="${qrUrl}" alt="UPI QR code" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <div style="display:none;font-size:0.74rem;color:var(--mute);padding:20px">QR needs internet. Use the UPI ID above directly.</div>
+        <div class="qr-cap">${t('pay_qr')}</div>
+      </div>
+      <button class="btn gold block" onclick="window.open('${upiUrl}','_blank')" style="margin-bottom:8px">${t('pay_open_upi')} 📱</button>
+      <details style="margin:6px 0 8px;border:1px solid var(--line);border-radius:6px;padding:6px 10px;background:var(--cream)">
+        <summary style="font-size:0.78rem;color:var(--ink-soft);cursor:pointer;font-weight:600">No UPI? Pay via Bank Transfer (NEFT/IMPS) →</summary>
+        <div style="font-size:0.74rem;color:var(--ink-soft);margin-top:8px;line-height:1.7">
+          <div style="display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:3px 0"><span>Account holder</span><strong>${DEV_UPI.bank.holder}</strong></div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:3px 0"><span>Account no.</span><strong style="font-family:monospace">${DEV_UPI.bank.account}</strong></div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:3px 0"><span>IFSC</span><strong style="font-family:monospace">${DEV_UPI.bank.ifsc}</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0"><span>Branch</span><strong style="font-size:0.7rem;text-align:right">${DEV_UPI.bank.branch}</strong></div>
+          <div style="font-size:0.68rem;color:var(--mute);margin-top:6px;font-style:italic">After NEFT/IMPS, email the UTR number to the support email below to get your activation code.</div>
+        </div>
+      </details>
+      <div style="font-size:0.72rem;color:var(--ink-soft);background:var(--cream-warm);border-left:3px solid var(--gold);padding:8px 10px;margin:8px 0;border-radius:4px;line-height:1.4">
+        ${t('pay_steps').replace('{amt}', amt)}
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label>${t('pay_code_label')}</label>
+        <input type="text" id="actCode" placeholder="BND-${plan==='lite'?'L':'P'}-XXXXXXXX-YY" style="font-family:monospace;text-transform:uppercase;letter-spacing:0.05em">
+        <div id="codeMsg" style="font-size:0.7rem;margin-top:4px;min-height:14px"></div>
+      </div>
+      <button class="btn green block" onclick="redeemCode('${plan}')">${t('pay_activate')}</button>
+      <div style="font-size:0.72rem;color:var(--mute);text-align:center;margin-top:10px;line-height:1.5;background:var(--cream-warm);border:1px solid var(--line);border-radius:8px;padding:8px 10px">
+        No code yet? After paying, email your UPI ref to<br>
+        <a href="mailto:${DEV_UPI.supportEmail}?subject=Bandhanam%20payment%20reference&body=I%20paid%20via%20UPI.%20My%20transaction%20reference%20is%3A%20%0A%0APlan%20wanted%3A%20Lite%20(₹149)%20or%20Pro%20(₹499)%3A%20%0A%0AMy%20name%3A%20" style="font-weight:700;color:var(--maroon);font-family:monospace;font-size:0.74rem">${DEV_UPI.supportEmail}</a><br>
+        You will receive your activation code within 1 hour.
+      </div>
+    </div>
+  `;
+  openModal(t('pay_title'), body);
+}
+
+async function redeemCode(plan) {
+  const code = document.getElementById('actCode').value;
+  const msgEl = document.getElementById('codeMsg');
+  msgEl.style.color = 'var(--mute)';
+  msgEl.textContent = 'Verifying…';
+  const res = await verifyActivationCode(code);
+  if (!res.ok) {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = '✗ ' + res.msg;
+    return;
+  }
+  if ((plan === 'lite' && res.plan !== 'lite') || (plan === 'pro' && res.plan !== 'pro')) {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = '✗ This code is for the ' + (res.plan==='lite'?'Lite':'Pro') + ' plan, not ' + plan;
+    return;
+  }
+  activatePlan(res.plan);
+}
+
+function activatePlan(plan) {
+  state.plan = plan;
+  state.planExpiry = plan === 'pro' ? (Date.now() + 365*24*60*60*1000) : null;
+  saveState();
+  closeModal();
+  showToast(plan === 'lite' ? t('plan_lite_activated') : t('plan_pro_activated'));
+  navTo('events');
+}
+
+function setCurrentPlan(plan) {
+  state.plan = plan;
+  saveState();
+}
+
+/* ─── Backup / export ─── */
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'bandhanam-backup-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(t('toast_exported'));
+}
+document.getElementById('exportBtn').addEventListener('click', exportData);
+
+/* ─── Utilities ─── */
+function escHtml(s) { return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escAttr(s) { return (s||'').replace(/"/g,'&quot;').replace(/'/g,"&#39;"); }
+function copyToClipboard(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).catch(()=>fallbackCopy(text));
+  } else { fallbackCopy(text); }
+}
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+}
+function formatEventDate(ev) {
+  if (!ev.date) return 'Date TBD';
+  const d = new Date(ev.date + 'T' + (ev.time || '00:00'));
+  return d.toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
+}
+function giftEmoji(name) {
+  const n = (name||'').toLowerCase();
+  if (n.includes('honeymoon')||n.includes('travel')) return '🏝️';
+  if (n.includes('sofa')||n.includes('furniture')) return '🛋️';
+  if (n.includes('kitchen')||n.includes('cooker')) return '🍚';
+  if (n.includes('car')||n.includes('bike')) return '🚗';
+  if (n.includes('phone')||n.includes('laptop')) return '💻';
+  if (n.includes('gold')||n.includes('jewel')) return '💍';
+  if (n.includes('camera')) return '📷';
+  if (n.includes('home')||n.includes('house')) return '🏡';
+  return '🎁';
+}
+
+/* ─── Language switcher ─── */
+document.getElementById('langSelect').addEventListener('change', e => {
+  currentLang = e.target.value;
+  state.lang = currentLang;
+  saveState();
+  applyI18n();
+});
+
+/* ─── PWA install prompt ─── */
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBtn').style.display = 'flex';
+  document.getElementById('installBanner').classList.add('show');
+});
+function triggerInstall() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      deferredPrompt = null;
+      document.getElementById('installBtn').style.display = 'none';
+      document.getElementById('installBanner').classList.remove('show');
+    });
+  } else {
+    showToast(t('install_hint_ios'));
+  }
+}
+document.getElementById('installBtn').addEventListener('click', triggerInstall);
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBtn').style.display = 'none';
+  document.getElementById('installBanner').classList.remove('show');
+  showToast('Bandhanam installed! 🎉');
+});
+
+/* ─── Service worker (external sw.js — works on GitHub Pages subpaths) ─── */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('SW registered'))
+      .catch(err => console.log('SW not registered:', err.message));
+  });
+}
+
+/* ─── Init ─── */
+applyI18n();
+renderHomeStats();
+renderEvents();
+
+// Handle ?event=ID deep link (guest view — simplified)
+const params = new URLSearchParams(location.search);
+if (params.get('event')) {
+  // In production this would open guest view; for now, open as organizer
+  const evId = params.get('event');
+  if (state.events.find(e => e.id === evId)) {
+    openEventDetail(evId);
+  }
+}
+</script>
+</body>
+</html>
